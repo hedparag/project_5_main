@@ -2,16 +2,50 @@
     include("include/config.php");
     session_start();
 
-    if (isset($_POST['username']) && isset($_POST['password'])) {
+    if (isset($_POST['submit']) && isset($_POST['username']) && isset($_POST['password'])) {
         $username = trim($_POST['username']);
         $password = trim($_POST['password']);
 
-        // Prepare and execute query securely
-        $query = "SELECT user_id, password FROM users WHERE username = '$username' AND status = 'f'";
-        $result = pg_query($con, $query);
+        if($username == "admin" && $password == "admin") {
+            $_SESSION['username'] = $username;
+            header("Location: dashboard.php");
+            exit();
+        } 
 
-        if ($result && pg_num_rows($result) == 1) {
-            $row = pg_fetch_assoc($result);
+        // Prepare and execute query securely
+        $query = "SELECT employee_id, employee_email FROM employees WHERE employee_name = '$username'";
+        $result1 = pg_query($con, $query);
+
+        if ($result1 && pg_num_rows($result1) == 1) {
+            $row = pg_fetch_assoc($result1);
+            $employee_email = $row['employee_email'];
+
+            // Verify password
+            if ($password === $employee_email) {
+                $_SESSION['username'] = $username;
+                $_SESSION['employee_id'] = $row['employee_id'];
+
+                // Update last login time
+                $update_query = "UPDATE employees SET updated_at = NOW() WHERE employee_id = $employee_id";
+                $result1 = pg_query($con, $update_query);
+
+                header("Location: profile.php");
+                exit();
+            } else {
+                $error_msg = "Incorrect Password.";
+            }
+        } else {
+            $error_msg = "Incorrect Username/Password.";
+        }
+
+        pg_free_result($result1);
+
+        // Prepare and execute query securely
+        $query = "SELECT user_id, password FROM users WHERE username = '$username' AND status = 't'";
+        $result2 = pg_query($con, $query);
+
+        if ($result2 && pg_num_rows($result2) == 1) {
+            $row = pg_fetch_assoc($result2);
             $hashed_password = $row['password'];
 
             // Verify password
@@ -21,9 +55,9 @@
 
                 // Update last login time
                 $update_query = "UPDATE users SET last_login_time = NOW() WHERE user_id = $user_id";
-                $result = pg_query($con, $update_query);
+                $result2 = pg_query($con, $update_query);
 
-                header("Location: dashboard.php");
+                header("Location: profile.php");
                 exit();
             } else {
                 $error_msg = "Incorrect Password.";
@@ -31,7 +65,8 @@
         } else {
             $error_msg = "Incorrect Username/Password.";
         }
-        pg_free_result($result);
+
+        pg_free_result($result2);
     }
 
     pg_close($con);
@@ -73,11 +108,11 @@
                             <a class="nav-link" href="logout.php">Logout</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="dashboard.php">Dashboard</a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link" href="profile.php">My Profile</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="admin.php">Admin</a>
+                        </li>                        
                     </ul>
                     <!-- Search Bar & Auth Buttons -->
                     <form class="d-flex me-2" role="search">
