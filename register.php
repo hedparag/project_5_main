@@ -36,11 +36,11 @@
                             <a class="nav-link" href="logout.php">Logout</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="dashboard.php">Dashboard</a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link" href="profile.php">My Profile</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="admin.php">Admin</a>
+                        </li>  
                     </ul>
                     <!-- Search Bar & Auth Buttons -->
                     <form class="d-flex me-2" role="search">
@@ -59,7 +59,6 @@
         <input type="text" class="login-input" name="employee_name" id="employee_name" placeholder="Employee Name" required />
         <input type="email" class="login-input" name="employee_email" id="employee_email" placeholder="Email Address" required />
         <input type="text" class="login-input" name="employee_phone" id="employee_phone" placeholder="Phone Number" required />
-        <input type="text" class="login-input" name="employee_username" id="employee_username" placeholder="Employee Username" required />
         <input type="number" class="login-input" name="user_type_id" id="user_type_id" placeholder="User Type ID" required />
         <input type="number" class="login-input" name="department_id" id="department_id" placeholder="Department ID" required />
         <input type="number" class="login-input" name="position_id" id="position_id" placeholder="Position ID" required />
@@ -68,10 +67,9 @@
         <textarea class="login-input" name="employee_details" id="employee_details" placeholder="Employee Details"></textarea>
         <textarea class="login-input" name="employee_skills" id="employee_skills" placeholder="Employee Skills"></textarea>
         <input type="date" class="login-input" name="dob" id="dob" placeholder="Date of Birth" />
-        <input type="password" class="login-input" name="password" id="password" placeholder="Password" required />
         <select class="login-input" name="status" id="status">
-            <option value="TRUE">Active</option>
-            <option value="FALSE">Inactive</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
         </select>
         <input type="submit" name="submit" value="Register" class="login-button">
         <p class="link">Already Have an Account? <a href="login.php">Login Here</a></p>
@@ -83,13 +81,11 @@
     // Database connection
     include("include/config.php");
 
-
     // Handling form submission
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $employee_name = pg_escape_string($con, $_POST['employee_name']);
         $employee_email = pg_escape_string($con, $_POST['employee_email']);
         $employee_phone = pg_escape_string($con, $_POST['employee_phone']);
-        $employee_username = pg_escape_string($con, $_POST['employee_username']);
         $user_type_id = intval($_POST['user_type_id']);
         $department_id = intval($_POST['department_id']);
         $position_id = intval($_POST['position_id']);
@@ -98,20 +94,9 @@
         $employee_details = isset($_POST['employee_details']) ? pg_escape_string($con, $_POST['employee_details']) : NULL;
         $employee_skils = isset($_POST['employee_skills']) ? pg_escape_string($con, $_POST['employee_skills']) : NULL;
         $dob = isset($_POST['dob']) ? pg_escape_string($con, $_POST['dob']) : NULL;
-        $password = $_POST['password'];  // Raw password input
-        $status = $_POST['status'] == 'true' ? 't' : 'f';
         $created_at = date('Y-m-d H:i:s');
         $updated_at = date('Y-m-d H:i:s');
-
-        // Hash the password
-        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-
-        if ($status === "") {
-            $status = NULL; // Set to NULL if it's an empty string
-        } elseif ($status !== "t" && $status !== "f") {
-            $status = (bool)$status; // Convert to a boolean value
-        }
-        
+        $status = $_POST['status'] == 'true' ? 't' : 'f';        
 
         // Prepare the SQL query with placeholders
         $query = "INSERT INTO employees (user_type_id, department_id, position_id, employee_name, employee_email, employee_phone, salary, profile_image, employee_details, employee_skils, dob, created_at, updated_at, status) 
@@ -119,20 +104,7 @@
     
         $result = pg_query($con, $query);
 
-
-
-        if ($row = pg_fetch_assoc($result)) {
-            $employee_id = $row['employee_id'];
-
-            // Generate a username
-            $username = strtolower(str_replace(' ', '_', $employee_name));
-
-            // Prepare the SQL query with placeholders
-            $user_query = "INSERT INTO users (employee_id, user_type_id, full_name, username, password, created_at, updated_at, status) 
-            VALUES ('$employee_id', '$user_type_id', '$employee_name', '$username', '$hashed_password', '$created_at', '$updated_at', '$status')";
-
-            $user_result = pg_query($con, $user_query);
-
+        if ($result) {
             echo "<div class='container'>
                 <div class='form' style='text-align:center; padding:20px; background-color:#d4edda; color:#155724; border:1px solid #c3e6cb; border-radius:5px;'>
                     <h3>Employee and User Account Registered Successfully!</h3><br>
@@ -147,6 +119,7 @@
             </div>";
         }
     }
+    
     pg_close($con);
     ?>
 
